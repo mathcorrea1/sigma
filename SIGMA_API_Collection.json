@@ -1,0 +1,256 @@
+{
+  "info": {
+    "name": "SIGMA API - CRUD Produtos + Fluxo de Caixa",
+    "description": "Collection para testar todas as funcionalidades da API SIGMA",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "sigma-api-collection"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.globals.set('token', response.access_token);",
+                  "    pm.collectionVariables.set('token', response.access_token);",
+                  "    console.log('Token salvo:', response.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Autenticação do usuário. Usuário padrão: admin | Senha: 123456"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Produtos",
+      "item": [
+        {
+          "name": "Listar Produtos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/produtos",
+              "host": ["{{base_url}}"],
+              "path": ["produtos"]
+            },
+            "description": "Lista todos os produtos cadastrados"
+          }
+        },
+        {
+          "name": "Buscar Produto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/produtos/1",
+              "host": ["{{base_url}}"],
+              "path": ["produtos", "1"]
+            },
+            "description": "Busca um produto específico pelo ID"
+          }
+        },
+        {
+          "name": "Criar Produto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Produto Exemplo\",\n    \"descricao\": \"Descrição do produto exemplo\",\n    \"valor\": 29.99\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/produtos",
+              "host": ["{{base_url}}"],
+              "path": ["produtos"]
+            },
+            "description": "Cria um novo produto"
+          }
+        },
+        {
+          "name": "Atualizar Produto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Produto Atualizado\",\n    \"descricao\": \"Descrição atualizada\",\n    \"valor\": 39.99\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/produtos/1",
+              "host": ["{{base_url}}"],
+              "path": ["produtos", "1"]
+            },
+            "description": "Atualiza um produto existente"
+          }
+        },
+        {
+          "name": "Deletar Produto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/produtos/1",
+              "host": ["{{base_url}}"],
+              "path": ["produtos", "1"]
+            },
+            "description": "Remove um produto"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Caixa",
+      "item": [
+        {
+          "name": "Listar Movimentações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/caixa",
+              "host": ["{{base_url}}"],
+              "path": ["caixa"]
+            },
+            "description": "Lista todas as movimentações do caixa com totais"
+          }
+        },
+        {
+          "name": "Criar Movimentação - Entrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"produto_id\": 1,\n    \"quantidade\": 10,\n    \"tipo\": \"entrada\",\n    \"valor_total\": 299.90\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/caixa/movimentacao",
+              "host": ["{{base_url}}"],
+              "path": ["caixa", "movimentacao"]
+            },
+            "description": "Cria uma nova movimentação de entrada no caixa"
+          }
+        },
+        {
+          "name": "Criar Movimentação - Saída",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"produto_id\": 1,\n    \"quantidade\": 3,\n    \"tipo\": \"saida\",\n    \"valor_total\": 89.97\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/caixa/movimentacao",
+              "host": ["{{base_url}}"],
+              "path": ["caixa", "movimentacao"]
+            },
+            "description": "Cria uma nova movimentação de saída no caixa"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Status da API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica se a API está funcionando"
+          }
+        },
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Endpoint raiz da API"
+          }
+        }
+      ]
+    }
+  ]
+}
