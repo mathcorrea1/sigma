@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm } from '../hooks/useForm';
+import { useFormSimple } from '../hooks/useFormSimple';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { productCreateSchema } from '../schemas/product';
 import Card from './ui/Card';
@@ -11,46 +11,53 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
   const { t } = useTranslation();
   const { handleFormError } = useErrorHandler();
 
-  // Inicializa formulário com schema de validação
+  // Primeiro, declarar o hook para ter acesso ao setFieldErrors
   const {
     values,
     errors,
     isSubmitting,
     handleChange,
     handleBlur,
-    handleSubmit,
-    setValues,
+    createSubmitHandler,
     setFieldErrors,
     reset
-  } = useForm({
-    schema: productCreateSchema,
-    initialValues: {
-      nome: '',
-      descricao: '',
-      valor: ''
-    },
-    onSubmit: async (formData) => {
-      try {
-        await onSubmit(formData);
-      } catch (error) {
-        handleFormError(error, setFieldErrors);
-        throw error; // Re-throw para que o hook possa gerenciar isSubmitting
-      }
-    }
+  } = useFormSimple(productCreateSchema, {
+    nome: '',
+    descricao: '',
+    valor: ''
   });
 
-  // Atualiza valores quando produto é editado
+  // Depois, criar a função de submit que usa setFieldErrors
+  const handleFormSubmit = useCallback(async (formData) => {
+    try {
+      await onSubmit(formData);
+    } catch (error) {
+      handleFormError(error, setFieldErrors);
+      throw error;
+    }
+  }, [onSubmit, handleFormError, setFieldErrors]);
+
+  // Criar o handler de submit
+  const handleSubmit = createSubmitHandler(handleFormSubmit);
+
+  // Reset form quando mudar de produto
   useEffect(() => {
     if (product) {
-      setValues({
+      // Se está editando, resetar com os dados do produto
+      reset({
         nome: product.nome || '',
         descricao: product.descricao || '',
         valor: product.valor?.toString() || ''
       });
     } else {
-      reset();
+      // Se é novo produto, resetar vazio
+      reset({
+        nome: '',
+        descricao: '',
+        valor: ''
+      });
     }
-  }, [product, setValues, reset]);
+  }, [product?.id]); // Removido reset das dependências
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -103,7 +110,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             name="nome"
             type="text"
             required
-            value={values.nome}
+            value={values.nome || ''}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder={t('forms.enter_name')}
@@ -123,7 +130,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             <textarea
               id="descricao"
               name="descricao"
-              value={values.descricao}
+              value={values.descricao || ''}
               onChange={handleChange}
               onBlur={handleBlur}
               rows="4"
@@ -144,7 +151,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
               </div>
             )}
             <div className="mt-1 text-xs text-gray-500 text-right">
-              {values.descricao.length}/500 {t('forms.characters')}
+              {(values.descricao || '').length}/500 {t('forms.characters')}
             </div>
           </div>
 
@@ -153,7 +160,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             name="valor"
             type="number"
             required
-            value={values.valor}
+            value={values.valor || ''}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder={t('forms.enter_price')}

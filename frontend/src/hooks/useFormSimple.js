@@ -2,20 +2,11 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Hook personalizado para gerenciar formulários com validação Zod
- * @param {Object} options - Opções do hook
- * @param {Object} options.schema - Schema Zod para validação
- * @param {Object} options.initialValues - Valores iniciais do formulário
- * @param {Function} options.onSubmit - Função chamada no submit
- * @returns {Object} Estado e funções do formulário
+ * Hook simplificado para formulários com validação Zod
  */
-export const useForm = ({
-  schema,
-  initialValues = {},
-  onSubmit = () => {}
-}) => {
+export const useFormSimple = (schema, initialValues = {}) => {
   const { t } = useTranslation();
-  const [values, setFormValues] = useState(initialValues);
+  const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,28 +15,28 @@ export const useForm = ({
    * Atualiza valor de um campo
    */
   const setValue = useCallback((name, value) => {
-    setFormValues(prev => ({
+    setValues(prev => ({
       ...prev,
       [name]: value
     }));
 
     // Limpa erro do campo quando usuário digita
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   }, [errors]);
 
   /**
    * Atualiza múltiplos valores
    */
-  const setValues = useCallback((newValues) => {
-    setFormValues(prev => ({
-      ...prev,
-      ...newValues
-    }));
+  const setFormValues = useCallback((newValues) => {
+    setValues(newValues);
+    setErrors({});
+    setTouched({});
   }, []);
 
   /**
@@ -70,10 +61,13 @@ export const useForm = ({
       fieldSchema.parse({ [name]: value });
       
       // Remove erro se validação passou
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
+      if (errors[name]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
       
       return true;
     } catch (error) {
@@ -86,7 +80,7 @@ export const useForm = ({
       }
       return false;
     }
-  }, [schema, t]);
+  }, [schema, t, errors]);
 
   /**
    * Valida todo o formulário
@@ -119,13 +113,19 @@ export const useForm = ({
    */
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : value;
+    let newValue = type === 'checkbox' ? checked : value;
+    
+    // Para campos numéricos, permite apenas números e pontos decimais
+    if (type === 'number' && typeof value === 'string') {
+      // Remove caracteres não numéricos exceto ponto e vírgula
+      newValue = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+    }
     
     setValue(name, newValue);
     
     // Valida campo em tempo real se já foi tocado
     if (touched[name]) {
-      validateField(name, newValue);
+      setTimeout(() => validateField(name, newValue), 0);
     }
   }, [setValue, validateField, touched]);
 
@@ -135,44 +135,47 @@ export const useForm = ({
   const handleBlur = useCallback((e) => {
     const { name, value } = e.target;
     setFieldTouched(name, true);
-    validateField(name, value);
+    setTimeout(() => validateField(name, value), 0);
   }, [setFieldTouched, validateField]);
 
   /**
    * Manipula submit do formulário
    */
-  const handleSubmit = useCallback(async (e) => {
-    if (e) e.preventDefault();
+  const createSubmitHandler = useCallback((onSubmitCallback) => {
+    return async (e) => {
+      if (e) e.preventDefault();
 
-    // Marca todos os campos como tocados
-    const allTouched = Object.keys(values).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouched(allTouched);
+      // Marca todos os campos como tocados
+      const allTouched = Object.keys(values).reduce((acc, key) => {
+        acc[key] = true;
+        return acc;
+      }, {});
+      setTouched(allTouched);
 
-    // Valida formulário
-    if (!validate()) {
-      return;
-    }
+      // Valida formulário
+      if (!validate()) {
+        return;
+      }
 
-    setIsSubmitting(true);
+      setIsSubmitting(true);
 
-    try {
-      await onSubmit(values);
-    } catch (error) {
-      // Tratamento de erro será feito no componente
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [values, validate, onSubmit]);
+      try {
+        if (onSubmitCallback) {
+          await onSubmitCallback(values);
+        }
+      } catch (error) {
+        throw error;
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+  }, [values, validate]);
 
   /**
    * Reseta o formulário
    */
-  const reset = useCallback((newInitialValues = initialValues) => {
-    setFormValues(newInitialValues);
+  const reset = useCallback((newValues = initialValues) => {
+    setValues(newValues);
     setErrors({});
     setTouched({});
     setIsSubmitting(false);
@@ -181,16 +184,6 @@ export const useForm = ({
   /**
    * Define erros externos (ex: vindos do servidor)
    */
-  const setFieldError = useCallback((name, error) => {
-    setErrors(prev => ({
-      ...prev,
-      [name]: error
-    }));
-  }, []);
-
-  /**
-   * Define múltiplos erros
-   */
   const setFieldErrors = useCallback((newErrors) => {
     setErrors(prev => ({
       ...prev,
@@ -198,59 +191,30 @@ export const useForm = ({
     }));
   }, []);
 
-  /**
-   * Verifica se campo tem erro
-   */
-  const hasError = useCallback((name) => {
-    return !!errors[name] && touched[name];
-  }, [errors, touched]);
-
-  /**
-   * Verifica se formulário é válido
-   */
-  const isValid = Object.keys(errors).length === 0;
-
-  /**
-   * Verifica se formulário foi modificado
-   */
-  const isDirty = JSON.stringify(values) !== JSON.stringify(initialValues);
-
   return {
-    // Valores
+    // Estados
     values,
     errors,
     touched,
     isSubmitting,
-    isValid,
-    isDirty,
+    isValid: Object.keys(errors).length === 0,
 
     // Funções de controle
     setValue,
-    setValues,
+    setFormValues,
     setFieldTouched,
-    setFieldError,
     setFieldErrors,
     reset,
 
     // Funções de validação
     validate,
     validateField,
-    hasError,
 
     // Handlers
     handleChange,
     handleBlur,
-    handleSubmit,
-
-    // Utilitários
-    getFieldProps: (name) => ({
-      name,
-      value: values[name] || '',
-      onChange: handleChange,
-      onBlur: handleBlur,
-      error: hasError(name) ? errors[name] : undefined
-    })
+    createSubmitHandler
   };
 };
 
-export default useForm;
+export default useFormSimple;

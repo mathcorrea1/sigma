@@ -115,15 +115,21 @@ const FilterModal = ({
               <input
                 type="number"
                 placeholder={t('forms.min_value')}
-                value={localFilters[`${key}_min`] || ''}
-                onChange={(e) => handleFilterChange(`${key}_min`, e.target.value)}
+                value={localFilters[key]?.min || ''}
+                onChange={(e) => handleFilterChange(key, { 
+                  ...localFilters[key], 
+                  min: e.target.value 
+                })}
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <input
                 type="number"
                 placeholder={t('forms.max_value')}
-                value={localFilters[`${key}_max`] || ''}
-                onChange={(e) => handleFilterChange(`${key}_max`, e.target.value)}
+                value={localFilters[key]?.max || ''}
+                onChange={(e) => handleFilterChange(key, { 
+                  ...localFilters[key], 
+                  max: e.target.value 
+                })}
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>

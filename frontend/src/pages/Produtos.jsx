@@ -53,11 +53,11 @@ const Produtos = () => {
 
     // Aplicar filtros avançados
     if (filters.priceRange) {
-      if (filters.priceRange.min !== undefined) {
-        result = result.filter(product => product.valor >= parseFloat(filters.priceRange.min));
+      if (filters.priceRange.min !== undefined && filters.priceRange.min !== '') {
+        result = result.filter(product => product.valor >= parseFloat(filters.priceRange.min) || 0);
       }
-      if (filters.priceRange.max !== undefined) {
-        result = result.filter(product => product.valor <= parseFloat(filters.priceRange.max));
+      if (filters.priceRange.max !== undefined && filters.priceRange.max !== '') {
+        result = result.filter(product => product.valor <= parseFloat(filters.priceRange.max) || Infinity);
       }
     }
 
@@ -414,50 +414,59 @@ const Produtos = () => {
                       <div className="md:hidden space-y-4 p-4">
                         {filteredAndSortedProducts.map((product) => (
                           <Card key={product.id} className="p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center space-x-3 flex-1">
+                            <div className="space-y-3">
+                              {/* Header com avatar e info básica */}
+                              <div className="flex items-center space-x-3">
                                 <div 
-                                  className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold"
+                                  className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
                                   aria-hidden="true"
                                 >
                                   {product.nome.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="text-sm font-medium text-gray-900 truncate">
+                                  <h3 className="text-sm font-medium text-gray-900 break-words">
                                     {product.nome}
                                   </h3>
                                   <p className="text-xs text-gray-500">ID: {product.id}</p>
-                                  {product.descricao && (
-                                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                      {product.descricao}
-                                    </p>
-                                  )}
-                                  <div className="mt-2 flex items-center gap-2">
-                                    <Badge variant="primary" size="sm">
-                                      R$ {product.valor.toFixed(2)}
-                                    </Badge>
-                                  </div>
                                 </div>
                               </div>
                               
-                              <div className="flex flex-col gap-2 ml-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditProduct(product)}
-                                  aria-label={`${t('common.edit')} ${product.nome}`}
-                                  icon={<Edit className="w-4 h-4" />}
-                                  className="p-2"
-                                />
+                              {/* Descrição */}
+                              {product.descricao && (
+                                <div className="pl-0">
+                                  <p className="text-xs text-gray-600 break-words">
+                                    {product.descricao}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {/* Preço e Ações */}
+                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <div>
+                                  <Badge variant="primary" size="sm">
+                                    R$ {product.valor.toFixed(2)}
+                                  </Badge>
+                                </div>
                                 
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteProduct(product)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
-                                  aria-label={`${t('common.delete')} ${product.nome}`}
-                                  icon={<Trash2 className="w-4 h-4" />}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditProduct(product)}
+                                    aria-label={`${t('common.edit')} ${product.nome}`}
+                                    icon={<Edit className="w-4 h-4" />}
+                                    className="h-8 w-8 p-0 flex-shrink-0"
+                                  />
+                                  
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteProduct(product)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 flex-shrink-0"
+                                    aria-label={`${t('common.delete')} ${product.nome}`}
+                                    icon={<Trash2 className="w-4 h-4" />}
+                                  />
+                                </div>
                               </div>
                             </div>
                           </Card>
