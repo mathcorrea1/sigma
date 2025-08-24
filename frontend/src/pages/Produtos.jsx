@@ -67,10 +67,15 @@ const Produtos = () => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
+        // Tratar valores numéricos (como preço)
+        if (sortConfig.key === 'valor' || typeof aValue === 'number') {
+          aValue = parseFloat(aValue) || 0;
+          bValue = parseFloat(bValue) || 0;
+        }
         // Tratar strings
-        if (typeof aValue === 'string') {
+        else if (typeof aValue === 'string') {
           aValue = aValue.toLowerCase();
-          bValue = bValue.toLowerCase();
+          bValue = bValue ? bValue.toLowerCase() : '';
         }
 
         if (aValue < bValue) {
@@ -329,7 +334,7 @@ const Produtos = () => {
                                 {t('products.description')}
                               </SortableTableHeader>
                               <SortableTableHeader 
-                                sortKey="preco"
+                                sortKey="valor"
                                 currentSort={sortConfig}
                                 onSort={handleSort}
                                 icon={<DollarSign className="h-4 w-4" />}
