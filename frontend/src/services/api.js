@@ -1,6 +1,25 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Função helper para obter variáveis de ambiente de forma segura
+const getEnvVar = (key, defaultValue) => {
+  try {
+    // Tenta import.meta.env (Vite)
+    if (import.meta && import.meta.env && import.meta.env[key]) {
+      return import.meta.env[key];
+    }
+    // Fallback para window.__ENV__ se definido
+    if (typeof window !== 'undefined' && window.__ENV__ && window.__ENV__[key]) {
+      return window.__ENV__[key];
+    }
+    // Fallback final
+    return defaultValue;
+  } catch (error) {
+    console.warn(`Erro ao acessar variável de ambiente ${key}:`, error);
+    return defaultValue;
+  }
+};
+
+const API_BASE_URL = getEnvVar('VITE_API_URL', 'http://localhost:8000');
 
 // Configuração do axios
 const api = axios.create({
