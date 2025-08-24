@@ -1,10 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Configuração do axios
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // Interceptor para adicionar token de autorização
@@ -20,15 +24,37 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Erro de autenticação
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+      return Promise.reject(new Error('Sessão expirada. Faça login novamente.'));
     }
-    return Promise.reject(error);
+    
+    // Erro de validação (400)
+    if (error.response?.status === 400) {
+      const detail = error.response.data?.detail;
+      if (detail) {
+        // Manter o erro original para tratamento específico no componente
+        return Promise.reject(error);
+      }
+    }
+    
+    // Erro de rede
+    if (!error.response) {
+      return Promise.reject(new Error('Erro de conexão. Verifique sua internet.'));
+    }
+    
+    // Outros erros do servidor
+    const serverMessage = error.response?.data?.detail || 
+                         error.response?.data?.message || 
+                         `Erro ${error.response?.status}: ${error.response?.statusText}`;
+    
+    return Promise.reject(new Error(serverMessage));
   }
 );
 
-// Auth API
+// Legacy exports (manter compatibilidade)
 export const authAPI = {
   login: async (username, password) => {
     const response = await api.post('/login', { username, password });
@@ -36,7 +62,6 @@ export const authAPI = {
   },
 };
 
-// Products API
 export const productsAPI = {
   getAll: async () => {
     const response = await api.get('/produtos');
@@ -64,7 +89,6 @@ export const productsAPI = {
   },
 };
 
-// Caixa API
 export const caixaAPI = {
   getMovimentacoes: async () => {
     const response = await api.get('/caixa');

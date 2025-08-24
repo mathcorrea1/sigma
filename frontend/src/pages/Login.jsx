@@ -14,30 +14,69 @@ const Login = () => {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.username.trim()) {
+      newErrors.username = t('validation.username_required');
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = t('validation.password_required');
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
     // Clear error when user types
-    if (error) setError('');
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
-    setError('');
+    setErrors({});
 
     try {
       const response = await authAPI.login(formData.username, formData.password);
       localStorage.setItem('token', response.access_token);
       navigate('/produtos');
     } catch (error) {
-      setError(error.response?.data?.detail || t('errors.generic'));
+      if (error.response?.status === 401) {
+        setErrors({ 
+          general: t('validation.invalid_credentials') 
+        });
+      } else if (error.response?.status === 400) {
+        setErrors({ 
+          general: error.response.data?.detail || t('validation.invalid_request') 
+        });
+      } else {
+        setErrors({ 
+          general: error.message || t('errors.generic') 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +121,23 @@ const Login = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+                {/* Exibir erro geral se houver */}
+                {errors.general && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800 mb-1">
+                          {t('validation.login_error')}
+                        </h4>
+                        <p className="text-sm text-red-700">{errors.general}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Input
                   label={t('auth.username')}
                   name="username"
@@ -91,6 +147,7 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder={t('auth.enter_username')}
                   autoComplete="username"
+                  error={errors.username}
                   icon={
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -106,7 +163,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder={t('auth.enter_password')}
-                  error={error}
+                  error={errors.password}
                   autoComplete="current-password"
                   icon={
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
