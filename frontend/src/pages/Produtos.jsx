@@ -162,25 +162,18 @@ const Produtos = () => {
   };
 
   const handleDeleteProduct = async (product) => {
-    console.log('Produto selecionado para exclusão:', product);
-    console.log('ID do produto:', product.id, 'Tipo:', typeof product.id);
     
     const confirmed = await confirmDelete(product.nome);
     if (!confirmed) return;
 
     setConfirmationLoading(true);
     try {
-      console.log('Tentando excluir produto:', product.id);
       await productsAPI.delete(product.id);
       loadProducts();
       success(t('products.product_deleted'), {
         title: t('common.success')
       });
     } catch (err) {
-      console.error('Erro ao excluir produto:', err);
-      console.error('Response data:', err.response?.data);
-      console.error('Status:', err.response?.status);
-      console.error('Headers:', err.response?.headers);
       error(t('errors.generic'), {
         title: t('common.error')
       });

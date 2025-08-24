@@ -59,8 +59,6 @@ export const productsAPI = {
   },
   
   delete: async (id) => {
-    console.log('API delete chamada com ID:', id);
-    console.log('URL da requisição:', `/produtos/${id}`);
     const response = await api.delete(`/produtos/${id}`);
     return response.data;
   },

@@ -75,7 +75,6 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
 
       await onSubmit(productData);
     } catch (error) {
-      console.error('Erro ao salvar produto:', error);
     } finally {
       setIsSubmitting(false);
     }

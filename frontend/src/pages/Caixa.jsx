@@ -43,7 +43,12 @@ const Caixa = () => {
 
   const { t } = useTranslation();
   const { success, error } = useNotification();
-  const { showConfirmation } = useConfirmation();
+  const {
+    confirmationState,
+    showConfirmation,
+    hideConfirmation,
+    confirmDelete
+  } = useConfirmation();
 
   // Filtrar e ordenar movimentações
   const filteredAndSortedMovimentacoes = useMemo(() => {
@@ -241,26 +246,23 @@ const Caixa = () => {
   };
 
   const handleDelete = async (id, productName) => {
-    const confirmed = await showConfirmation({
-      title: t('common.confirm_delete'),
-      message: `${t('cashier.confirm_delete_transaction')} ${productName}?`,
-      confirmText: t('common.delete'),
-      cancelText: t('common.cancel'),
-      variant: 'danger'
-    });
+    
+    try {
+      const confirmed = await confirmDelete(productName || `Movimentação ${id}`);
+      
+      if (!confirmed) return;
 
-    if (confirmed) {
-      try {
-        await caixaAPI.deleteMovimentacao(id);
-        loadCaixaData();
-        success(t('cashier.transaction_deleted'), {
-          title: t('common.success')
-        });
-      } catch (err) {
-        error(t('errors.generic'), {
-          title: t('common.error')
-        });
-      }
+      await caixaAPI.deleteMovimentacao(id);
+      loadCaixaData();
+      success(t('cashier.transaction_deleted'), {
+        title: t('common.success')
+      });
+    } catch (err) {
+      error(t('errors.generic'), {
+        title: t('common.error')
+      });
+    } finally {
+      hideConfirmation();
     }
   };
 
@@ -740,6 +742,21 @@ const Caixa = () => {
           onClearFilters={handleClearFilters}
           filters={filters}
           filterOptions={filterOptions}
+        />
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={confirmationState.isOpen}
+          onClose={hideConfirmation}
+          onConfirm={confirmationState.onConfirm}
+          title={confirmationState.title}
+          message={confirmationState.message}
+          type={confirmationState.type}
+          confirmText={confirmationState.confirmText}
+          cancelText={confirmationState.cancelText}
+          requireTyping={confirmationState.requireTyping}
+          typingText={confirmationState.typingText}
+          loading={confirmationState.loading}
         />
       </div>
     </>
